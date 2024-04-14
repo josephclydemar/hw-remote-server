@@ -16,6 +16,6 @@ module.exports = {
         uuid: 'uuid',
         dotenv: 'dotenv',
         socketio: 'socket.io',
-        datefns: 'date-fns'
-    }
+        datefns: 'date-fns',
+    },
 };
