@@ -6,10 +6,10 @@
   "author": "Clyde Mar <clydemar234@gmail.com>",
   "license": "MIT",
   "scripts": {
-    "start": "npx node ./dist/server.js",
-    "dev": "npx nodemon ./dist/server.js",
+    "start": "node ./dist/server.js",
+    "dev": "nodemon",
     "format": "npx onchange \"**/*\" -- npx prettier --write .",
-    "compile": "npx tsc -w"
+    "build": "tsc && webpack && rm -rf ./temp-build"
   },
   "devDependencies": {
     "@types/express": "^4.17.21",
@@ -17,7 +17,10 @@
     "nodemon": "^3.1.0",
     "onchange": "^7.1.0",
     "prettier": "^3.2.5",
-    "typescript": "^5.4.5"
+    "ts-node": "^10.9.2",
+    "typescript": "^5.4.5",
+    "webpack": "^5.89.0",
+    "webpack-cli": "^5.1.4"
   },
   "dependencies": {
     "bcrypt": "^5.1.1",
