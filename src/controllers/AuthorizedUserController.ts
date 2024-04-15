@@ -1,5 +1,9 @@
 import { Request, Response } from 'express';
 
+// events
+import { MyEvent } from '../events/GlobalEvent';
+
+// models
 import AuthorizedUserModel from '../models/AuthorizedUserModel';
 
 async function getAuthorizedUsers(req: Request, res: Response): Promise<void> {
@@ -26,6 +30,7 @@ async function insertOneAuthorizedUser(req: Request, res: Response): Promise<voi
                 name: req.body.name,
             });
             res.status(200).json(newAuthorizedUser);
+            MyEvent.emit('added_new_authorized_user_event');
             return;
         } else {
             res.status(409).json({ message: 'Authorized Users conflict of Names', conflict: true });
