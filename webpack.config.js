@@ -1,4 +1,5 @@
 const path = require('path');
+const nodeExternals = require('webpack-node-externals');
 
 module.exports = {
     entry: './temp-build/server.js',
@@ -10,12 +11,5 @@ module.exports = {
     target: 'node',
     mode: 'production',
     stats: 'errors-warnings',
-    externals: {
-        express: 'express',
-        mongoose: 'mongoose',
-        uuid: 'uuid',
-        dotenv: 'dotenv',
-        socketio: 'socket.io',
-        datefns: 'date-fns',
-    },
+    externals: [nodeExternals()],
 };
