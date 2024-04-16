@@ -21,12 +21,28 @@ async function getAuthorizedUsers(req: Request, res: Response): Promise<void> {
     }
 }
 
+async function getOneAuthorizedUser(req: Request, res: Response): Promise<void> {
+    try {
+        const authorizedUsers = await AuthorizedUserModel.findOne({ _id: req.params.id }).sort({ createdAt: -1 });
+        res.status(200).json(authorizedUsers);
+        return;
+    } catch (err) {
+        if (err instanceof Error) {
+            console.error(err.message);
+            res.status(500).json({ message: 'Server Error!!', error: true });
+        } else {
+            throw new Error('Error: GET /authorized_users');
+        }
+    }
+}
+
 async function insertOneAuthorizedUser(req: Request, res: Response): Promise<void> {
     try {
         const conflict = await AuthorizedUserModel.findOne({ name: req.body.name }).exec();
         if (conflict === null || conflict === undefined) {
             // No conflict
             const newAuthorizedUser = await AuthorizedUserModel.create({
+                profileImage: req.body.profileImage,
                 name: req.body.name,
             });
             res.status(200).json(newAuthorizedUser);
@@ -45,4 +61,4 @@ async function insertOneAuthorizedUser(req: Request, res: Response): Promise<voi
     }
 }
 
-export default { getAuthorizedUsers, insertOneAuthorizedUser };
+export default { getAuthorizedUsers, getOneAuthorizedUser, insertOneAuthorizedUser };
