@@ -5,5 +5,6 @@ import AuthorizedUsersController from '../../controllers/AuthorizedUserControlle
 const router: Router = express.Router();
 
 router.route('/authorized_users').get(AuthorizedUsersController.getAuthorizedUsers).post(AuthorizedUsersController.insertOneAuthorizedUser);
+router.route('/authorized_users/:id').get(AuthorizedUsersController.getOneAuthorizedUser);
 
 export default router;
