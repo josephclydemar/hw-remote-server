@@ -1,15 +1,21 @@
 import cors from 'cors';
+import cron from 'node-cron';
 import dotenv from 'dotenv';
 import mongoose from 'mongoose';
 import express, { Express, Response, Request, NextFunction } from 'express';
 import { Server, Socket } from 'socket.io';
 
 import { MyEvent } from './events/GlobalEvent';
-import { logEvent } from './middlewares/logger';
+import { logEvent } from './middlewares/Logger';
 
 // V1 API routes
 import AuthorizedUsersV1Route from './routes/api-v1/AuthorizedUsersRoute';
 import DetectionsV1Route from './routes/api-v1/DetectionsRoute';
+import DayRecordsV1Route from './routes/api-v1/DayRecordsRoute';
+import CurrentDayRecordV1Route from './routes/api-v1/CurrentDayRecordRoute';
+
+// Jobs
+import { insertCurrentDayRecord, deleteOldestDayRecord } from './jobs/DayRecordJobs';
 
 dotenv.config();
 
@@ -30,10 +36,24 @@ app.use(express.json());
 
 app.use('/api/v1', AuthorizedUsersV1Route);
 app.use('/api/v1', DetectionsV1Route);
+app.use('/api/v1', DayRecordsV1Route);
+app.use('/api/v1', CurrentDayRecordV1Route);
 
 app.all('*', function (req: Request, res: Response): void {
     res.status(404).send('Invalid path.');
 });
+
+// Jobs
+cron.schedule('* * *', function (): void {
+    // Execute everyday
+    insertCurrentDayRecord();
+    deleteOldestDayRecord();
+});
+
+// cron.schedule('58 * * * * *', function (): void {
+//     // Execute everyday
+//     console.log('Hello bro!!');
+// });
 
 mongoose
     .connect(DATABASE_URI)
