@@ -43,21 +43,18 @@ app.all('*', function (req: Request, res: Response): void {
     res.status(404).send('Invalid path.');
 });
 
-// Jobs
-cron.schedule('* * *', function (): void {
+// // Jobs
+cron.schedule('0 0 0 * * *', function (): void {
     // Execute everyday
     insertCurrentDayRecord();
     deleteOldestDayRecord();
 });
 
-// cron.schedule('58 * * * * *', function (): void {
-//     // Execute everyday
-//     console.log('Hello bro!!');
-// });
 
 mongoose
     .connect(DATABASE_URI)
     .then(function (): void {
+        logEvent(NODE_ENV, `${DATABASE_URI.split('+')[0]} Connected to database`)
         if (NODE_ENV === 'development') {
             const httpServer = app.listen(PORT, function (): void {
                 logEvent(NODE_ENV, `Listening on PORT: ${PORT}`);
@@ -74,8 +71,17 @@ mongoose
 
             io.on('connection', function (socket: Socket) {
                 logEvent(NODE_ENV, `Socket client [${socket.id}] connected.`);
+
                 socket.on('message', function (data: string): void {
                     logEvent(NODE_ENV, `Socket client [${socket.id}] message: ${data}`);
+                });
+
+                socket.on('from_raspi_notif', function (data: any): void {
+                    socket.broadcast.emit('from_server_notif', data);
+                });
+                
+                socket.on('from_mobile_to_add_new_authorized_user', function (data: { name: string; }): void {
+                    socket.broadcast.emit('from_server_to_add_new_authorized_user', data);
                 });
 
                 socket.on('disconnect', function () {
