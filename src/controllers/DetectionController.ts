@@ -1,7 +1,11 @@
-import { Request, Response } from 'express';
+import { v4 } from 'uuid';
+import { Request, Response, NextFunction } from 'express';
 
 // events
 import { MyEvent } from '../events/GlobalEvent';
+
+// middlewares
+// import { uploadFiles } from '../middlewares/Uploader';
 
 // models
 import DetectionModel from '../models/DetectionModel';
@@ -10,7 +14,6 @@ async function getDetections(req: Request, res: Response): Promise<void> {
     try {
         const detections = await DetectionModel.find({}).sort({ createdAt: -1 });
         res.status(200).json(detections);
-        return;
     } catch (err) {
         if (err instanceof Error) {
             console.error(err.message);
@@ -23,18 +26,12 @@ async function getDetections(req: Request, res: Response): Promise<void> {
 
 async function insertOneDetection(req: Request, res: Response): Promise<void> {
     try {
-        const conflict = await DetectionModel.findOne({ recordedVideo: req.body.recordedVideo }).exec();
-        if (conflict === null || conflict === undefined) {
-            // No conflict
-            const newDetection = await DetectionModel.create({
-                recordedVideo: req.body.recordedVideo,
-            });
-            res.status(200).json(newDetection);
-            MyEvent.emit('added_new_detection_event');
-            return;
-        } else {
-            res.status(409).json({ message: 'Detections conflict of recordedVideos', conflict: true });
-        }
+        // uploadFiles(req, res, next);
+        const newDetection = await DetectionModel.create({
+            recordedVideo: v4(),
+        });
+        res.status(200).json(newDetection);
+        MyEvent.emit('added_new_detection_event');
     } catch (err) {
         if (err instanceof Error) {
             console.error(err.message);
@@ -43,6 +40,7 @@ async function insertOneDetection(req: Request, res: Response): Promise<void> {
             throw new Error('Error: POST /detections');
         }
     }
+    // next();
 }
 
 export default { getDetections, insertOneDetection };
