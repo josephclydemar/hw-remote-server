@@ -79,6 +79,10 @@ mongoose
                 socket.on('from_raspi_notif', function (data: any): void {
                     socket.broadcast.emit('from_server_notif', data);
                 });
+
+                socket.on('from_raspi_live_video_frame', function (data: string): void {
+                    socket.broadcast.emit('from_server_live_video_frame', data);
+                });
                 
                 socket.on('from_mobile_to_add_new_authorized_user', function (data: { name: string; }): void {
                     socket.broadcast.emit('from_server_to_add_new_authorized_user', data);
