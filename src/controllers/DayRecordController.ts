@@ -38,7 +38,7 @@ async function insertOneDayRecord(req: Request, res: Response): Promise<void> {
         const newDayRecord = await DayRecordModel.create({
             detections: req.body.detections,
         });
-        res.status(200).json(newDayRecord);
+        res.status(201).json(newDayRecord);
         MyEvent.emit('added_new_day_record_event');
         return;
     } catch (err) {

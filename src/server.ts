@@ -4,6 +4,8 @@ import dotenv from 'dotenv';
 import mongoose from 'mongoose';
 import express, { Express, Response, Request, NextFunction } from 'express';
 import { Server, Socket } from 'socket.io';
+import { Transform } from 'stream';
+
 
 import { MyEvent } from './events/GlobalEvent';
 import { logEvent } from './middlewares/Logger';
@@ -13,6 +15,8 @@ import AuthorizedUsersV1Route from './routes/api-v1/AuthorizedUsersRoute';
 import DetectionsV1Route from './routes/api-v1/DetectionsRoute';
 import DayRecordsV1Route from './routes/api-v1/DayRecordsRoute';
 import CurrentDayRecordV1Route from './routes/api-v1/CurrentDayRecordRoute';
+
+
 
 // Jobs
 import { insertCurrentDayRecord, deleteOldestDayRecord } from './jobs/DayRecordJobs';
@@ -26,7 +30,7 @@ const DATABASE_URI: string = process.env.DATABASE_URI || '';
 const app: Express = express();
 
 app.use(function (req: Request, res: Response, next: NextFunction) {
-    logEvent(NODE_ENV, `${req.method}\t${req.headers.origin}\t${req.url}`);
+    logEvent(NODE_ENV, `${req.headers.host}    ${req.method}\t${req.url}`);
     next();
 });
 
@@ -50,6 +54,7 @@ cron.schedule('0 0 0 * * *', function (): void {
     deleteOldestDayRecord();
 });
 
+const x = new Transform()
 
 mongoose
     .connect(DATABASE_URI)

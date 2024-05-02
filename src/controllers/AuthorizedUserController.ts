@@ -45,7 +45,7 @@ async function insertOneAuthorizedUser(req: Request, res: Response): Promise<voi
                 profileImage: req.body.profileImage,
                 name: req.body.name,
             });
-            res.status(200).json(newAuthorizedUser);
+            res.status(201).json(newAuthorizedUser);
             MyEvent.emit('added_new_authorized_user_event');
             return;
         } else {

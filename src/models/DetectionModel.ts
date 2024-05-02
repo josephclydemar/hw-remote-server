@@ -2,8 +2,8 @@ import mongoose from 'mongoose';
 
 const DetectionsSchema = new mongoose.Schema(
     {
-        recordedVideo: {
-            type: String,
+        videoId: {
+            type: mongoose.SchemaTypes.ObjectId,
             required: true,
         },
     },

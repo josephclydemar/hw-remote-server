@@ -10,4 +10,7 @@ router.route('/detections')
 .get(DetectionsController.getDetections)
 .post(uploadFiles, DetectionsController.insertOneDetection);
 
+router.route('/detections/:id')
+.get(DetectionsController.streamOneDetectionVideo);
+
 export default router;
