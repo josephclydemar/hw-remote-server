@@ -22,7 +22,7 @@ const DATABASE_URI: string = process.env.DATABASE_URI || '';
 // * For saving uploads to database
 const storage = new GridFsStorage({
     url: DATABASE_URI,
-    file: (req, file) => {
+    file: (req, file: any) => {
         console.log(file);
         return {
             filename: `${file.originalname.split('.')[0]}_${Date.now()}`,
