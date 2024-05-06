@@ -7,7 +7,7 @@ dotenv.config();
 
 const DATABASE_URI: string = process.env.DATABASE_URI || '';
 
-// * For saving uploads to filesystem
+// // * For saving uploads to filesystem
 // const storage = multer.diskStorage({
 //     destination: function (req, file, callback) {
 //         callback(null, './videos');
@@ -18,15 +18,19 @@ const DATABASE_URI: string = process.env.DATABASE_URI || '';
 //     }
 // });
 
+type GridFsFile = {
+    filename: string;
+    bucketName: string;
+};
 
 // * For saving uploads to database
 const storage = new GridFsStorage({
     url: DATABASE_URI,
-    file: (req, file: any) => {
+    file: function (req, file: any): GridFsFile {
         console.log(file);
         return {
             filename: `${file.originalname.split('.')[0]}_${Date.now()}`,
-            bucketName: 'detection_videos'
+            bucketName: 'detection_videos',
         };
     }
 });
