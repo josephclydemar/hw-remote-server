@@ -4,7 +4,6 @@ import dotenv from 'dotenv';
 import mongoose from 'mongoose';
 import express, { Express, Response, Request, NextFunction } from 'express';
 import { Server, Socket } from 'socket.io';
-import { Transform } from 'stream';
 
 
 import { MyEvent } from './events/GlobalEvent';
@@ -16,15 +15,13 @@ import DetectionsV1Route from './routes/api-v1/DetectionsRoute';
 import DayRecordsV1Route from './routes/api-v1/DayRecordsRoute';
 import CurrentDayRecordV1Route from './routes/api-v1/CurrentDayRecordRoute';
 
-
-
-// Jobs
+// Cron Jobs
 import { insertCurrentDayRecord, deleteOldestDayRecord } from './jobs/DayRecordJobs';
 
 dotenv.config();
 
 const PORT: string = process.env.PORT || '8700';
-const NODE_ENV: string = process.env.NODE_ENV || 'production';
+const NODE_ENV: string = process.env.NODE_ENV || 'uninitialized';
 const DATABASE_URI: string = process.env.DATABASE_URI || '';
 
 const app: Express = express();
@@ -47,14 +44,13 @@ app.all('*', function (req: Request, res: Response): void {
     res.status(404).send('Invalid path.');
 });
 
-// // Jobs
+// Jobs
 cron.schedule('0 0 0 * * *', function (): void {
     // Execute everyday
     insertCurrentDayRecord();
     deleteOldestDayRecord();
 });
 
-const x = new Transform()
 
 mongoose
     .connect(DATABASE_URI)
