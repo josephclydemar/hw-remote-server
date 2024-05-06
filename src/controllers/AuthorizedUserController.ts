@@ -8,13 +8,17 @@ import AuthorizedUserModel from '../models/AuthorizedUserModel';
 
 async function getAuthorizedUsers(req: Request, res: Response): Promise<void> {
     try {
-        const authorizedUsers = await AuthorizedUserModel.find({}).sort({ createdAt: -1 });
-        res.status(200).json(authorizedUsers);
+        const token: string | undefined = req.body.token;
+        if(token !== undefined && token !== null) {
+            const authorizedUsers = await AuthorizedUserModel.find({}).sort({ createdAt: -1 });
+            res.status(200).json(authorizedUsers);
+            return;
+        }
+        res.status(401).json({ message: 'you are unauthorized to access this resource' });
         return;
     } catch (err) {
         if (err instanceof Error) {
-            console.error(err.message);
-            res.status(500).json({ message: 'Server Error!!', error: true });
+            res.status(500).json({ message: err.message, error: true });
         } else {
             throw new Error('Error: GET /authorized_users');
         }
@@ -28,8 +32,7 @@ async function getOneAuthorizedUser(req: Request, res: Response): Promise<void> 
         return;
     } catch (err) {
         if (err instanceof Error) {
-            console.error(err.message);
-            res.status(500).json({ message: 'Server Error!!', error: true });
+            res.status(500).json({ message: err.message, error: true });
         } else {
             throw new Error('Error: GET /authorized_users');
         }
@@ -53,8 +56,7 @@ async function insertOneAuthorizedUser(req: Request, res: Response): Promise<voi
         }
     } catch (err) {
         if (err instanceof Error) {
-            console.error(err.message);
-            res.status(500).json({ message: 'Server Error!!', error: true });
+            res.status(500).json({ message: err.message, error: true });
         } else {
             throw new Error('Error: POST /authorized_users');
         }
