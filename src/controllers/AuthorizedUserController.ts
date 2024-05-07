@@ -8,13 +8,8 @@ import AuthorizedUserModel from '../models/AuthorizedUserModel';
 
 async function getAuthorizedUsers(req: Request, res: Response): Promise<void> {
     try {
-        const token: string | undefined = req.body.token;
-        if(token !== undefined && token !== null) {
-            const authorizedUsers = await AuthorizedUserModel.find({}).sort({ createdAt: -1 });
-            res.status(200).json(authorizedUsers);
-            return;
-        }
-        res.status(401).json({ message: 'you are unauthorized to access this resource' });
+        const authorizedUsers = await AuthorizedUserModel.find({}).sort({ createdAt: -1 });
+        res.status(200).json(authorizedUsers);
         return;
     } catch (err) {
         if (err instanceof Error) {
