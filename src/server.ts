@@ -16,7 +16,7 @@ import DayRecordsV1Route from './routes/api-v1/DayRecordsRoute';
 import CurrentDayRecordV1Route from './routes/api-v1/CurrentDayRecordRoute';
 
 // Cron Jobs
-import { insertCurrentDayRecord, deleteOldestDayRecord } from './jobs/DayRecordJobs';
+import { insertCurrentDayRecordService, deleteOldestDayRecordService } from './services/DayRecordServices';
 
 dotenv.config();
 
@@ -47,8 +47,8 @@ app.all('*', function (req: Request, res: Response): void {
 // Jobs
 cron.schedule('0 0 0 * * *', function (): void {
     // Execute everyday
-    insertCurrentDayRecord();
-    deleteOldestDayRecord();
+    insertCurrentDayRecordService();
+    deleteOldestDayRecordService();
 });
 
 
