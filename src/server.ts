@@ -5,15 +5,16 @@ import mongoose from 'mongoose';
 import express, { Express, Response, Request, NextFunction } from 'express';
 import { Server, Socket } from 'socket.io';
 
-
 import { MyEvent } from './events/GlobalEvent';
 import { logEvent } from './middlewares/Logger';
 
 // V1 API routes
-import AuthorizedUsersV1Route from './routes/api-v1/AuthorizedUsersRoute';
-import DetectionsV1Route from './routes/api-v1/DetectionsRoute';
-import DayRecordsV1Route from './routes/api-v1/DayRecordsRoute';
-import CurrentDayRecordV1Route from './routes/api-v1/CurrentDayRecordRoute';
+import AuthorizedUsersV1Router from './routes/api-v1/AuthorizedUsersRoute';
+import DayRecordsV1Router from './routes/api-v1/DayRecordsRoute';
+import DetectionsV1Router from './routes/api-v1/DetectionsRoute';
+
+import DayRecordsV2Router from './routes/api-v2/DayRecordsRoute';
+import DetectionsV2Router from './routes/api-v2/DetectionsRoute';
 
 // Cron Jobs
 import { insertCurrentDayRecordService, deleteOldestDayRecordService } from './services/DayRecordServices';
@@ -35,27 +36,35 @@ app.use(cors());
 app.use(express.urlencoded({ extended: false }));
 app.use(express.json());
 
-app.use('/api/v1', AuthorizedUsersV1Route);
-app.use('/api/v1', DetectionsV1Route);
-app.use('/api/v1', DayRecordsV1Route);
-app.use('/api/v1', CurrentDayRecordV1Route);
+app.use('/api/v1', AuthorizedUsersV1Router);
+app.use('/api/v1', DayRecordsV1Router);
+app.use('/api/v1', DetectionsV1Router);
+
+app.use('/api/v2', DayRecordsV2Router);
+app.use('/api/v2', DetectionsV2Router);
 
 app.all('*', function (req: Request, res: Response): void {
     res.status(404).send('Invalid path.');
 });
 
-// Jobs
-cron.schedule('0 0 0 * * *', function (): void {
-    // Execute everyday
+// Services
+// cron.schedule('0 0 0 * * *', function (): void {
+//     // Execute everyday
+//     insertCurrentDayRecordService();
+//     deleteOldestDayRecordService();
+// });
+
+cron.schedule('0 * * * * *', function (): void {
+    // Execute minute
+    logEvent(NODE_ENV, 'Created new day_record.')
     insertCurrentDayRecordService();
     deleteOldestDayRecordService();
 });
 
-
 mongoose
     .connect(DATABASE_URI)
     .then(function (): void {
-        logEvent(NODE_ENV, `${DATABASE_URI.split('+')[0]} Connected to database`)
+        logEvent(NODE_ENV, `${DATABASE_URI.split('+')[0]} Connected to database`);
         if (NODE_ENV === 'development') {
             const httpServer = app.listen(PORT, function (): void {
                 logEvent(NODE_ENV, `Listening on PORT: ${PORT}`);
@@ -64,10 +73,13 @@ mongoose
             const io: Server = new Server(httpServer, { cors: { origin: '*' } });
 
             MyEvent.on('added_new_authorized_user_event', function (): void {
-                io.emit('added_new_authorized_user');
+                io.emit('update_authorized_user');
+            });
+            MyEvent.on('added_new_day_record_event', function (): void {
+                io.emit('update_authorized_user');
             });
             MyEvent.on('added_new_detection_event', function (): void {
-                io.emit('added_new_current_day_detection');
+                io.emit('update_current_day_detection');
             });
 
             io.on('connection', function (socket: Socket) {
@@ -84,8 +96,8 @@ mongoose
                 socket.on('from_raspi_live_video_frame', function (data: string): void {
                     socket.broadcast.emit('from_server_live_video_frame', data);
                 });
-                
-                socket.on('from_mobile_to_add_new_authorized_user', function (data: { name: string; }): void {
+
+                socket.on('from_mobile_to_add_new_authorized_user', function (data: { name: string }): void {
                     socket.broadcast.emit('from_server_to_add_new_authorized_user', data);
                 });
 
