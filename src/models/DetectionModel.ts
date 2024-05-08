@@ -3,7 +3,7 @@ import mongoose from 'mongoose';
 const DetectionsSchema = new mongoose.Schema(
     {
         videoId: {
-            type: mongoose.SchemaTypes.ObjectId,
+            type: String,
             required: true,
         },
     },
