@@ -1,6 +1,5 @@
 import fs from 'fs';
 import path from 'path';
-import { v4 } from 'uuid';
 import { Request, Response } from 'express';
 
 // events
@@ -8,13 +7,31 @@ import { MyEvent } from '../events/GlobalEvent';
 
 // models
 import DetectionModel from '../models/DetectionModel';
-
+import DayRecordModel from '../models/DayRecordModel';
 
 // * GET controllers
 async function getDetections(req: Request, res: Response): Promise<void> {
     try {
         const detections = await DetectionModel.find({}).sort({ createdAt: -1 });
         res.status(200).json(detections);
+    } catch (err) {
+        if (err instanceof Error) {
+            console.error(err.message);
+            res.status(500).json({ message: 'Server Error!!', error: true });
+        } else {
+            throw new Error('Error: GET /detections');
+        }
+    }
+}
+
+async function getSpecificDetections(req: Request, res: Response): Promise<void> {
+    try {
+        // console.log(req);
+        const requestBody = req.body;
+        if('detection_ids' in requestBody) {
+            const detections = await DetectionModel.find({ _id: { $in: requestBody.detection_ids } }).sort({ createdAt: -1 });
+            res.status(200).json(detections);
+        }
     } catch (err) {
         if (err instanceof Error) {
             console.error(err.message);
@@ -33,7 +50,7 @@ async function streamOneDetectionVideo(req: Request, res: Response): Promise<voi
         return;
     }
     // console.log(range);
-    const videoPath = path.join(__dirname, '..', '..', 'videos', `${req.params.id}.mp4`);
+    const videoPath = path.join(__dirname, '..', '..', 'videos', `${req.params.id}.avi`);
     // console.log(videoPath);
 
     // Check if the video file exists
@@ -41,7 +58,6 @@ async function streamOneDetectionVideo(req: Request, res: Response): Promise<voi
         res.status(404).send('Video file not found');
         return;
     }
-
 
     // Obtain video file stats
     const videoSize = fs.statSync(videoPath).size;
@@ -59,7 +75,7 @@ async function streamOneDetectionVideo(req: Request, res: Response): Promise<voi
         'Content-Range': `bytes ${START}-${END}/${videoSize}`,
         'Accept-Ranges': 'bytes',
         'Content-Length': contentLength,
-        'Content-Type': 'video/mp4',
+        'Content-Type': 'video/avi',
     });
 
     // Create read stream for video file and pipe it to response
@@ -67,19 +83,46 @@ async function streamOneDetectionVideo(req: Request, res: Response): Promise<voi
     videoStream.pipe(res);
 }
 
-
 // * POST controllers
 async function insertOneDetection(req: Request, res: Response): Promise<void> {
     try {
         let requestFile = req.file;
-        if(requestFile !== undefined && requestFile !== null && 'id' in requestFile) {
-            const newDetection = await DetectionModel.create({
-                videoId: requestFile.id,
-            });
-            res.status(201).json(newDetection);
-            MyEvent.emit('added_new_detection_event');
-            return;
+        let requestBody = req.body;
+        console.log({ requestFile, requestBody });
+        if (requestFile !== undefined && requestFile !== null) {
+            if ('id' in requestFile && 'day_record_id' in requestBody) {
+                const newDetection = await DetectionModel.create({
+                    videoId: requestFile.id,
+                });
+                await DayRecordModel.updateOne({
+                    _id: requestBody.day_record_id
+                }, {
+                    $addToSet: {
+                        detections: newDetection._id,
+                    }
+                });
+                res.status(201).json(newDetection);
+                MyEvent.emit('added_new_detection_event');
+                MyEvent.emit('added_new_day_record_event');
+                return;
+            } else if ('filename' in requestFile && 'day_record_id' in requestBody) {
+                const newDetection = await DetectionModel.create({
+                    videoId: path.basename(requestFile.filename, '.avi'),
+                });
+                await DayRecordModel.updateOne({
+                    _id: requestBody.day_record_id
+                }, {
+                    $addToSet: {
+                        detections: newDetection._id,
+                    }
+                });
+                res.status(201).json(newDetection);
+                MyEvent.emit('added_new_detection_event');
+                MyEvent.emit('added_new_day_record_event');
+                return;
+            }
         }
+
         res.status(202).json({ message: 'File was not saved to database' });
         MyEvent.emit('added_new_detection_event');
         return;
@@ -94,7 +137,8 @@ async function insertOneDetection(req: Request, res: Response): Promise<void> {
 }
 
 export default {
-    getDetections, 
+    getDetections,
+    getSpecificDetections,
     streamOneDetectionVideo,
-    insertOneDetection
+    insertOneDetection,
 };
