@@ -4,13 +4,10 @@ import DetectionsController from '../../controllers/DetectionController';
 
 import { uploadFiles } from '../../middlewares/Uploader';
 
-const router: Router = express.Router();
+const DetectionsV1Router: Router = express.Router();
 
-router.route('/detections')
-.get(DetectionsController.getDetections)
-.post(uploadFiles, DetectionsController.insertOneDetection);
+DetectionsV1Router.route('/detections').get(DetectionsController.getDetections).post(uploadFiles, DetectionsController.insertOneDetection);
 
-router.route('/detections/:id')
-.get(DetectionsController.streamOneDetectionVideo);
+DetectionsV1Router.route('/detections/:id').get(DetectionsController.streamOneDetectionVideo);
 
-export default router;
+export default DetectionsV1Router;
