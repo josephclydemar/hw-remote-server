@@ -21,9 +21,9 @@ async function getDayRecords(req: Request, res: Response): Promise<void> {
     }
 }
 
-async function getCurrentDayRecord(req: Request, res: Response): Promise<void> {
+async function getLatestDayRecord(req: Request, res: Response): Promise<void> {
     try {
-        const currentDayRecord = await DayRecordModel.findOne({}).sort({ createdAt: -1 });
+        const currentDayRecord = await DayRecordModel.findOne({}).sort({ createdAt: 1 });
         res.status(200).json(currentDayRecord);
     } catch (err) {
         if (err instanceof Error) {
@@ -51,4 +51,4 @@ async function insertOneDayRecord(req: Request, res: Response): Promise<void> {
     }
 }
 
-export default { getDayRecords, getCurrentDayRecord, insertOneDayRecord };
+export default { getDayRecords, getLatestDayRecord, insertOneDayRecord };
