@@ -6,6 +6,14 @@ const DetectionsSchema = new mongoose.Schema(
             type: String,
             required: true,
         },
+        videoFormat: {
+            type: String,
+            required: true,
+        },
+        videoDurationSeconds: {
+            type: String,
+            required: true,
+        },
     },
     { timestamps: true },
 );

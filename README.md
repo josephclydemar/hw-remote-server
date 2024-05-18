@@ -1,4 +1,4 @@
-# Home Warden [Remote Server]
+# HOME WARDEN [Remote Server]
 This repo contains the remote server code
 
 ### Instructions

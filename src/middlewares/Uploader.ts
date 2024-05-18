@@ -1,4 +1,5 @@
 import path from 'path';
+import { v4 as uuid } from 'uuid';
 // import dotenv from 'dotenv';
 import multer from 'multer';
 // import { GridFsStorage } from 'multer-gridfs-storage';
@@ -14,7 +15,7 @@ const storage = multer.diskStorage({
     },
     filename: function (req, file, callback) {
         // console.log(file);
-        callback(null, `${Date.now()}${path.extname(file.originalname)}`);
+        callback(null, `${Date.now()}-${uuid()}${path.extname(file.originalname)}`);
     },
 });
 

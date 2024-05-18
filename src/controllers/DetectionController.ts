@@ -28,7 +28,7 @@ async function getSpecificDetections(req: Request, res: Response): Promise<void>
     try {
         // console.log(req);
         const requestBody = req.body;
-        if('detection_ids' in requestBody) {
+        if ('detection_ids' in requestBody) {
             const detections = await DetectionModel.find({ _id: { $in: requestBody.detection_ids } }).sort({ createdAt: -1 });
             res.status(200).json(detections);
         }
@@ -49,8 +49,15 @@ async function streamOneDetectionVideo(req: Request, res: Response): Promise<voi
         res.status(400).send('Request Range header missing');
         return;
     }
+
+    const detection = await DetectionModel.findOne({ _id: req.params.id });
+    if (detection === undefined || detection === null) {
+        res.json(400).send('Resource does not exist');
+        return;
+    }
+    const { videoId, videoFormat } = detection;
     // console.log(range);
-    const videoPath = path.join(__dirname, '..', '..', 'videos', `${req.params.id}.avi`);
+    const videoPath = path.join(__dirname, '..', '..', 'videos', `${videoId}.${videoFormat}`);
     // console.log(videoPath);
 
     // Check if the video file exists
@@ -63,7 +70,7 @@ async function streamOneDetectionVideo(req: Request, res: Response): Promise<voi
     const videoSize = fs.statSync(videoPath).size;
 
     // Parse range headers
-    const CHUNK_SIZE = 10 ** 6; // 1MB
+    const CHUNK_SIZE = 50 ** 6; // 5MB
     const START: number = Number(range.replace(/\D/g, ''));
     const END = Math.min(START + CHUNK_SIZE, videoSize - 1);
 
@@ -75,7 +82,7 @@ async function streamOneDetectionVideo(req: Request, res: Response): Promise<voi
         'Content-Range': `bytes ${START}-${END}/${videoSize}`,
         'Accept-Ranges': 'bytes',
         'Content-Length': contentLength,
-        'Content-Type': 'video/avi',
+        'Content-Type': `video/${videoFormat}`,
     });
 
     // Create read stream for video file and pipe it to response
@@ -86,36 +93,46 @@ async function streamOneDetectionVideo(req: Request, res: Response): Promise<voi
 // * POST controllers
 async function insertOneDetection(req: Request, res: Response): Promise<void> {
     try {
-        let requestFile = req.file;
-        let requestBody = req.body;
+        const requestFile = req.file;
+        const requestBody = req.body;
         console.log({ requestFile, requestBody });
         if (requestFile !== undefined && requestFile !== null) {
             if ('id' in requestFile && 'day_record_id' in requestBody) {
                 const newDetection = await DetectionModel.create({
                     videoId: requestFile.id,
+                    videoFormat: path.extname(requestFile.filename).substring(1),
                 });
-                await DayRecordModel.updateOne({
-                    _id: requestBody.day_record_id
-                }, {
-                    $addToSet: {
-                        detections: newDetection._id,
-                    }
-                });
+                await DayRecordModel.updateOne(
+                    {
+                        _id: requestBody.day_record_id,
+                    },
+                    {
+                        $addToSet: {
+                            detections: newDetection._id,
+                        },
+                    },
+                );
                 res.status(201).json(newDetection);
                 MyEvent.emit('added_new_detection_event');
                 MyEvent.emit('added_new_day_record_event');
                 return;
-            } else if ('filename' in requestFile && 'day_record_id' in requestBody) {
+            } else if ('filename' in requestFile && 'video_duration_seconds' in requestBody && 'day_record_id' in requestBody) {
+                const format: string = path.extname(requestFile.filename);
                 const newDetection = await DetectionModel.create({
-                    videoId: path.basename(requestFile.filename, '.avi'),
+                    videoId: path.basename(requestFile.filename, format),
+                    videoFormat: format.substring(1),
+                    videoDurationSeconds: requestBody.video_duration_seconds,
                 });
-                await DayRecordModel.updateOne({
-                    _id: requestBody.day_record_id
-                }, {
-                    $addToSet: {
-                        detections: newDetection._id,
-                    }
-                });
+                await DayRecordModel.updateOne(
+                    {
+                        _id: requestBody.day_record_id,
+                    },
+                    {
+                        $addToSet: {
+                            detections: newDetection._id,
+                        },
+                    },
+                );
                 res.status(201).json(newDetection);
                 MyEvent.emit('added_new_detection_event');
                 MyEvent.emit('added_new_day_record_event');

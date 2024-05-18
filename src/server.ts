@@ -5,11 +5,12 @@ import mongoose from 'mongoose';
 import express, { Express, Response, Request, NextFunction } from 'express';
 import { Server, Socket } from 'socket.io';
 
-import { MyEvent } from './events/GlobalEvent';
+import { MyEvent, Events } from './events/GlobalEvent';
 import { logEvent } from './middlewares/Logger';
 
 // V1 API routes
 import AuthorizedUsersV1Router from './routes/api-v1/AuthorizedUsersRoute';
+import AuthorizedUsersEntriesV1Router from './routes/api-v1/AuthorizedUsersEntriesRoute';
 import DayRecordsV1Router from './routes/api-v1/DayRecordsRoute';
 import DetectionsV1Router from './routes/api-v1/DetectionsRoute';
 
@@ -23,7 +24,7 @@ dotenv.config();
 
 const PORT: string = process.env.PORT || '8700';
 const NODE_ENV: string = process.env.NODE_ENV || 'uninitialized';
-const DATABASE_URI: string = process.env.DATABASE_URI || '';
+const DATABASE_URI: string = process.env.LOCAL_DATABASE_URI || '';
 
 const app: Express = express();
 
@@ -37,6 +38,7 @@ app.use(express.urlencoded({ extended: false }));
 app.use(express.json());
 
 app.use('/api/v1', AuthorizedUsersV1Router);
+app.use('/api/v1', AuthorizedUsersEntriesV1Router);
 app.use('/api/v1', DayRecordsV1Router);
 app.use('/api/v1', DetectionsV1Router);
 
@@ -45,20 +47,6 @@ app.use('/api/v2', DetectionsV2Router);
 
 app.all('*', function (req: Request, res: Response): void {
     res.status(404).send('Invalid path.');
-});
-
-// Services
-// cron.schedule('0 0 0 * * *', function (): void {
-//     // Execute everyday
-//     insertCurrentDayRecordService();
-//     deleteOldestDayRecordService();
-// });
-
-cron.schedule('0 * * * * *', function (): void {
-    // Execute minute
-    logEvent(NODE_ENV, 'Created new day_record.')
-    insertCurrentDayRecordService();
-    deleteOldestDayRecordService();
 });
 
 mongoose
@@ -72,14 +60,41 @@ mongoose
 
             const io: Server = new Server(httpServer, { cors: { origin: '*' } });
 
-            MyEvent.on('added_new_authorized_user_event', function (): void {
-                io.emit('update_authorized_user');
+            // Services
+            cron.schedule('0 0 0 * * *', function (): void {
+                // Execute everyday
+                insertCurrentDayRecordService();
+                deleteOldestDayRecordService();
             });
-            MyEvent.on('added_new_day_record_event', function (): void {
-                io.emit('update_authorized_user');
+
+            // cron.schedule('0 * * * * *', function (): void {
+            //     // Execute minute
+            //     logEvent(NODE_ENV, 'Created new day_record.');
+            //     insertCurrentDayRecordService();
+            //     deleteOldestDayRecordService();
+            // });
+
+            // cron.schedule('* * * * * *', function (): void {
+            //     // Execute second
+            //     logEvent(NODE_ENV, 'Created new day_record.')
+            //     insertCurrentDayRecordService();
+            //     deleteOldestDayRecordService();
+            // });
+
+            MyEvent.on(Events.addedNewAuthorizedUserEvent, function (): void {
+                io.emit(Events.updateAuthorizedUserEvent);
             });
-            MyEvent.on('added_new_detection_event', function (): void {
-                io.emit('update_current_day_detection');
+
+            MyEvent.on(Events.addedNewAuthorizedUserEntryEvent, function (): void {
+                io.emit(Events.updateAuthorizedUserEntryEvent);
+            });
+
+            MyEvent.on(Events.addedNewDayRecordEvent, function (): void {
+                io.emit(Events.updateDayRecord);
+            });
+
+            MyEvent.on(Events.addedNewDetectionEvent, function (): void {
+                io.emit(Events.updateCurrentDayDetection);
             });
 
             io.on('connection', function (socket: Socket) {
@@ -93,12 +108,32 @@ mongoose
                     socket.broadcast.emit('from_server_notif', data);
                 });
 
-                socket.on('from_raspi_live_video_frame', function (data: string): void {
-                    socket.broadcast.emit('from_server_live_video_frame', data);
+                socket.on('from_raspi_doorbell_press', function (data: string): void {
+                    socket.broadcast.emit('from_server_doorbell_press', data);
                 });
 
-                socket.on('from_mobile_to_add_new_authorized_user', function (data: { name: string }): void {
-                    socket.broadcast.emit('from_server_to_add_new_authorized_user', data);
+                socket.on('from_raspi_user_entered', function (data: string): void {
+                    socket.broadcast.emit('from_server_user_entered', data);
+                });
+
+                socket.on('from_raspi_number_of_faces_detected', function (data: number): void {
+                    socket.broadcast.emit('from_server_number_of_faces_detected', data);
+                });
+
+                // socket.on('from_mobile_to_add_new_authorized_user', function (data: { name: string }): void {
+                //     socket.broadcast.emit('from_server_to_add_new_authorized_user', data);
+                // });
+
+                socket.on('from_mobile_control_door', function (data: [string, string]): void {
+                    socket.broadcast.emit('from_server_control_door', data);
+                });
+
+                socket.on('from_mobile_control_light', function (data: [string, string]): void {
+                    socket.broadcast.emit('from_server_control_light', data);
+                });
+
+                socket.on('from_mobile_set_operating_mode', function (data: [string, string]): void {
+                    socket.broadcast.emit('from_server_set_operating_mode', data);
                 });
 
                 socket.on('disconnect', function () {
